@@ -9,14 +9,17 @@
     "theeye"
   ],
   "license": "MIT",
-  "homepage": "https://live.fluidx.digital",
+  "homepage": "https://git.reality-heros.com/titelplusplus/n8n-nodes-fluidx#readme",
   "author": {
     "name": "Titel++ / Revelate XR",
     "email": "titel@titelplusplus.com"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/titelplusplus/n8n-nodes-fluidx.git"
+    "url": "git+https://git.reality-heros.com/titelplusplus/n8n-nodes-fluidx.git"
+  },
+  "bugs": {
+    "url": "https://git.reality-heros.com/titelplusplus/n8n-nodes-fluidx/-/issues"
   },
   "engines": {
     "node": ">=20.15"
@@ -26,9 +29,9 @@
     "build": "tsc && gulp build:icons",
     "dev": "tsc --watch",
     "format": "prettier nodes credentials --write",
-    "lint": "eslint nodes credentials package.json",
-    "lintfix": "eslint nodes credentials package.json --fix",
-    "prepublishOnly": "npm run build && npm run lint -c .eslintrc.prepublish.js nodes credentials package.json"
+    "lint": "eslint --ext .ts,.json nodes credentials package.json",
+    "lintfix": "eslint --ext .ts,.json nodes credentials package.json --fix",
+    "prepublishOnly": "npm run build"
   },
   "files": [
     "dist"
