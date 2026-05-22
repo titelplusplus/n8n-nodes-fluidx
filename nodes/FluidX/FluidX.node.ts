@@ -10,7 +10,7 @@ import {
   NodeOperationError,
 } from 'n8n-workflow';
 
-type ResourceName = 'session' | 'inboundCall' | 'sms' | 'media';
+type ResourceName = 'session' | 'inboundCall' | 'sms' | 'email' | 'media';
 
 export class FluidX implements INodeType {
   description: INodeTypeDescription = {
@@ -20,7 +20,7 @@ export class FluidX implements INodeType {
     group: ['transform'],
     version: 1,
     subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
-    description: 'Interact with the fluidX revXR THE EYE API (sessions, inbound calls, SMS, media).',
+    description: 'Interact with the fluidX revXR THE EYE API (sessions, inbound calls, SMS, email, media).',
     defaults: { name: 'fluidX' },
     inputs: ['main'],
     outputs: ['main'],
@@ -37,6 +37,7 @@ export class FluidX implements INodeType {
           { name: 'Session', value: 'session', description: 'Create, read, close THE EYE sessions' },
           { name: 'Inbound Call', value: 'inboundCall', description: 'Submit and track inbound call requests' },
           { name: 'SMS', value: 'sms', description: 'Send transactional SMS' },
+          { name: 'Email', value: 'email', description: 'Send transactional email tied to a session' },
           { name: 'Media', value: 'media', description: 'Read/upsert media info and session summaries' },
         ],
         default: 'session',
@@ -250,6 +251,62 @@ export class FluidX implements INodeType {
         displayOptions: { show: { resource: ['sms'], operation: ['send'] } },
       },
 
+      // ---------- Email ----------
+      {
+        displayName: 'Operation',
+        name: 'operation',
+        type: 'options',
+        noDataExpression: true,
+        displayOptions: { show: { resource: ['email'] } },
+        options: [
+          { name: 'Send', value: 'send', action: 'Send an email', description: 'POST /api/fx/ext/email/send' },
+        ],
+        default: 'send',
+      },
+      {
+        displayName: 'To Email',
+        name: 'emailTo',
+        type: 'string',
+        default: '',
+        required: true,
+        placeholder: 'user@example.com',
+        displayOptions: { show: { resource: ['email'], operation: ['send'] } },
+      },
+      {
+        displayName: 'Link',
+        name: 'emailLink',
+        type: 'string',
+        default: '',
+        description: 'Optional link. If "Message" is empty the link is used to build a default body.',
+        displayOptions: { show: { resource: ['email'], operation: ['send'] } },
+      },
+      {
+        displayName: 'Subject',
+        name: 'emailSubject',
+        type: 'string',
+        default: '',
+        description: 'Optional subject. Defaults to "fluidX.digital The Eye — your session link".',
+        displayOptions: { show: { resource: ['email'], operation: ['send'] } },
+      },
+      {
+        displayName: 'Message',
+        name: 'emailMessage',
+        type: 'string',
+        typeOptions: { rows: 4 },
+        default: '',
+        description: 'Optional plain-text message body. Falls back to a generated body from the link.',
+        displayOptions: { show: { resource: ['email'], operation: ['send'] } },
+      },
+      {
+        displayName: 'Session ID',
+        name: 'emailSessionId',
+        type: 'string',
+        default: '',
+        required: true,
+        description: 'Associated session ID. The endpoint requires the session to be ACTIVE and uses it to charge consumption.',
+        displayOptions: { show: { resource: ['email'], operation: ['send'] } },
+      },
+
       // ---------- Media ----------
       {
         displayName: 'Operation',
@@ -417,6 +474,24 @@ export class FluidX implements INodeType {
             };
           } else {
             throw new NodeOperationError(this.getNode(), `Unknown sms operation: ${operation}`, { itemIndex: i });
+          }
+        } else if (resource === 'email') {
+          if (operation === 'send') {
+            method = 'POST';
+            path = '/api/fx/ext/email/send';
+            const emailBody: IDataObject = {
+              email: this.getNodeParameter('emailTo', i) as string,
+              sessionId: this.getNodeParameter('emailSessionId', i) as string,
+            };
+            const link = (this.getNodeParameter('emailLink', i, '') as string).trim();
+            const subject = (this.getNodeParameter('emailSubject', i, '') as string).trim();
+            const message = (this.getNodeParameter('emailMessage', i, '') as string).trim();
+            if (link) emailBody.link = link;
+            if (subject) emailBody.subject = subject;
+            if (message) emailBody.message = message;
+            body = emailBody;
+          } else {
+            throw new NodeOperationError(this.getNode(), `Unknown email operation: ${operation}`, { itemIndex: i });
           }
         } else if (resource === 'media') {
           if (operation === 'getInfo') {
