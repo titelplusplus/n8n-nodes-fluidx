@@ -35,7 +35,12 @@
     "format": "prettier nodes credentials --write",
     "lint": "eslint --ext .ts,.json nodes credentials package.json",
     "lintfix": "eslint --ext .ts,.json nodes credentials package.json --fix",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "release": "release-it",
+    "release:dry": "release-it --dry-run",
+    "release:patch": "release-it patch",
+    "release:minor": "release-it minor",
+    "release:major": "release-it major"
   },
   "files": [
     "dist"
@@ -50,6 +55,7 @@
     ]
   },
   "devDependencies": {
+    "@release-it/conventional-changelog": "^11.0.0",
     "@types/node": "^20.10.0",
     "@typescript-eslint/parser": "^7.15.0",
     "eslint": "^8.57.0",
@@ -57,6 +63,7 @@
     "gulp": "^4.0.2",
     "n8n-workflow": "^1.82.0",
     "prettier": "^3.3.2",
+    "release-it": "^20.0.1",
     "typescript": "^5.5.3"
   },
   "peerDependencies": {

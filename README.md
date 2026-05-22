@@ -76,6 +76,33 @@ Output goes to `dist/`. The `n8n` block in `package.json` points at
 | Media → Upsert Info       | `POST /api/fx/ext/media/info`                                   |
 | Media → Get Summary       | `GET /api/fx/ext/media/summary?sessionId=`                      |
 
+## Releasing
+
+Releases are managed locally with [`release-it`](https://github.com/release-it/release-it) and published from CI with npm provenance.
+
+```bash
+# interactive (asks which version bump to use)
+npm run release
+
+# non-interactive bumps
+npm run release:patch
+npm run release:minor
+npm run release:major
+
+# preview without changing anything
+npm run release:dry
+```
+
+`release-it` will: run lint + build, bump the version in `package.json`, update `CHANGELOG.md` from conventional commits, commit, tag (`vX.Y.Z`), push, and create the GitHub release. The pushed tag triggers `.github/workflows/publish.yml`, which runs `npm publish` with provenance — required for n8n's verified-node program.
+
+Prerequisites:
+
+- Run on the `main` branch with a clean working tree.
+- Authenticate with GitHub so a release can be created: either export `GITHUB_TOKEN`, or use `GITHUB_TOKEN="$(gh auth token)" npm run release`.
+- The `NPM_TOKEN` secret must be set in the GitHub repo so the publish workflow can authenticate.
+
+Use [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `ci:`, `docs:`, etc.) so the changelog and version bump are derived correctly.
+
 ## License
 
 MIT
