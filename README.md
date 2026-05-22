@@ -7,6 +7,7 @@ Community n8n node for the **fluidX revXR THE EYE** API. Adds a single `fluidX` 
 | Session      | Create, Get, Get All, Close, Close All      |
 | Inbound Call | Create, Get, Cancel, End                    |
 | SMS          | Send                                        |
+| Email        | Send                                        |
 | Media        | Get Info, Upsert Info, Get Summary          |
 
 Once installed it appears in n8n's node search as **fluidX**.
@@ -70,6 +71,7 @@ Output goes to `dist/`. The `n8n` block in `package.json` points at
 | Inbound Call → Cancel     | `POST /api/fx/ext/inbound/calls/{id}/cancel`                    |
 | Inbound Call → End        | `POST /api/fx/ext/inbound/calls/{id}/end`                       |
 | SMS → Send                | `POST /api/fx/ext/sms/send`                                     |
+| Email → Send              | `POST /api/fx/ext/email/send`                                   |
 | Media → Get Info          | `GET /api/fx/ext/media/info?type=&id=`                          |
 | Media → Upsert Info       | `POST /api/fx/ext/media/info`                                   |
 | Media → Get Summary       | `GET /api/fx/ext/media/summary?sessionId=`                      |
