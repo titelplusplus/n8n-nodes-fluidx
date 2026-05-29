@@ -10,7 +10,7 @@ import {
   NodeOperationError,
 } from 'n8n-workflow';
 
-type ResourceName = 'session' | 'inboundCall' | 'sms' | 'email' | 'media';
+type ResourceName = 'session' | 'inboundCall' | 'sms' | 'email' | 'media' | 'eye';
 
 export class FluidX implements INodeType {
   description: INodeTypeDescription = {
@@ -39,6 +39,7 @@ export class FluidX implements INodeType {
           { name: 'SMS', value: 'sms', description: 'Send transactional SMS' },
           { name: 'Email', value: 'email', description: 'Send transactional email tied to a session' },
           { name: 'Media', value: 'media', description: 'Read/upsert media info and session summaries' },
+          { name: 'Eye', value: 'eye', description: 'Remote control commands for an active Eye session' },
         ],
         default: 'session',
       },
@@ -372,6 +373,28 @@ export class FluidX implements INodeType {
         required: true,
         displayOptions: { show: { resource: ['media'], operation: ['getSummary'] } },
       },
+
+      // ---------- Eye ----------
+      {
+        displayName: 'Operation',
+        name: 'operation',
+        type: 'options',
+        noDataExpression: true,
+        displayOptions: { show: { resource: ['eye'] } },
+        options: [
+          { name: 'Take Photo', value: 'takePhoto', action: 'Take a photo', description: 'POST /api/fx/ext/eye/takephoto' },
+        ],
+        default: 'takePhoto',
+      },
+      {
+        displayName: 'Session ID',
+        name: 'eyeSessionId',
+        type: 'string',
+        default: '',
+        required: true,
+        description: 'RevXR session ID. Must be ACTIVE with a running Eye session.',
+        displayOptions: { show: { resource: ['eye'], operation: ['takePhoto'] } },
+      },
     ],
   };
 
@@ -516,6 +539,14 @@ export class FluidX implements INodeType {
             qs = { sessionId: this.getNodeParameter('mediaSessionId', i) as string };
           } else {
             throw new NodeOperationError(this.getNode(), `Unknown media operation: ${operation}`, { itemIndex: i });
+          }
+        } else if (resource === 'eye') {
+          if (operation === 'takePhoto') {
+            method = 'POST';
+            path = '/api/fx/ext/eye/takephoto';
+            body = { sessionId: this.getNodeParameter('eyeSessionId', i) as string };
+          } else {
+            throw new NodeOperationError(this.getNode(), `Unknown eye operation: ${operation}`, { itemIndex: i });
           }
         } else {
           throw new NodeOperationError(this.getNode(), `Unknown resource: ${resource}`, { itemIndex: i });

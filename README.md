@@ -9,6 +9,7 @@ Community n8n node for the **fluidX revXR THE EYE** API. Adds a single `fluidX` 
 | SMS          | Send                                        |
 | Email        | Send                                        |
 | Media        | Get Info, Upsert Info, Get Summary          |
+| Eye          | Take Photo                                  |
 
 Once installed it appears in n8n's node search as **fluidX**.
 
@@ -75,6 +76,7 @@ Output goes to `dist/`. The `n8n` block in `package.json` points at
 | Media → Get Info          | `GET /api/fx/ext/media/info?type=&id=`                          |
 | Media → Upsert Info       | `POST /api/fx/ext/media/info`                                   |
 | Media → Get Summary       | `GET /api/fx/ext/media/summary?sessionId=`                      |
+| Eye → Take Photo          | `POST /api/fx/ext/eye/takephoto`                                |
 
 ## Releasing
 
