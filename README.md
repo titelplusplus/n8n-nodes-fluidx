@@ -8,7 +8,7 @@ Community n8n node for the **fluidX revXR THE EYE** API. Adds a single `fluidX` 
 | Inbound Call | Create, Get, Cancel, End                    |
 | SMS          | Send                                        |
 | Email        | Send                                        |
-| Media        | Get Info, Upsert Info, Get Summary          |
+| Media        | Get Info, Upsert Info, Get Summary, Download |
 | Eye          | Take Photo                                  |
 
 Once installed it appears in n8n's node search as **fluidX**.
@@ -76,7 +76,45 @@ Output goes to `dist/`. The `n8n` block in `package.json` points at
 | Media → Get Info          | `GET /api/fx/ext/media/info?type=&id=`                          |
 | Media → Upsert Info       | `POST /api/fx/ext/media/info`                                   |
 | Media → Get Summary       | `GET /api/fx/ext/media/summary?sessionId=`                      |
+| Media → Download          | `GET /api/fx/ext/media/download?sessionId=&mediaId=&type=&format=` |
 | Eye → Take Photo          | `POST /api/fx/ext/eye/takephoto`                                |
+
+## Downloading media (binary)
+
+`Media → Download` streams the original binary of a captured photo or video and writes it
+to a **binary property** on the output item (default field name `data`), so you can pipe it
+straight into _Write Binary File_, _Move Binary Data_, email attachments, S3, etc.
+
+Parameters:
+
+- **Source** — how to address the media:
+  - `By ID` — build the request from **Session ID**, **Media ID** and **Type** (+ optional **Format**).
+  - `By URL` — paste a ready download **URL** (e.g. a `photoRefs[].url` / `videoRefs[].url`
+    link from a session response). The API key is still sent automatically, so you don't need a
+    separate HTTP Request node with header auth.
+- **Session ID** / **Media ID** — identify the captured media (`By ID` mode).
+- **Type** — `Photo` or `Video` (`By ID` mode).
+- **Format** — video only; `WebM` (default) or `MP4` transcode. Ignored for photos.
+- **URL** — the download link (`By URL` mode).
+- **Put Output In Field** — name of the binary property to write to (default `data`).
+- **File Name** — optional; otherwise derived from the media ID, type, and the response
+  `Content-Type` (e.g. `photo-77.png`, `video-12.webm`).
+
+> The endpoint requires a **TENANT_ADMIN** API key.
+
+The JSON side of the output item carries `{ sessionId, mediaId, type, fileName }`; the actual
+bytes live in the binary property.
+
+### Discovering media IDs
+
+A `Session → Get` (or `Create`) response includes `photoRefs` and `videoRefs` arrays, each entry
+having an `id` and a ready `url` that already points at `/api/fx/ext/media/download`. You can
+either:
+
+1. **By ID** — feed each `id` into a `Media → Download` node (it builds the request for you), or
+2. **By URL** — pass the `url` straight into a `Media → Download` node in `By URL` mode
+   (e.g. `{{ $json.url }}`). This is the one-node equivalent of a generic **HTTP Request** node
+   with header auth.
 
 ## Releasing
 

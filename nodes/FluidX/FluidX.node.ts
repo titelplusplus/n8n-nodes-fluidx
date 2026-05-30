@@ -319,6 +319,7 @@ export class FluidX implements INodeType {
           { name: 'Get Info', value: 'getInfo', action: 'Get media info', description: 'GET /api/fx/ext/media/info' },
           { name: 'Upsert Info', value: 'upsertInfo', action: 'Upsert media info', description: 'POST /api/fx/ext/media/info' },
           { name: 'Get Summary', value: 'getSummary', action: 'Get session summary', description: 'GET /api/fx/ext/media/summary' },
+          { name: 'Download', value: 'download', action: 'Download media', description: 'GET /api/fx/ext/media/download' },
         ],
         default: 'getInfo',
       },
@@ -372,6 +373,86 @@ export class FluidX implements INodeType {
         default: '',
         required: true,
         displayOptions: { show: { resource: ['media'], operation: ['getSummary'] } },
+      },
+
+      // Download (binary stream). Requires a TENANT_ADMIN API key.
+      {
+        displayName: 'Source',
+        name: 'downloadSource',
+        type: 'options',
+        options: [
+          { name: 'By ID', value: 'byId', description: 'Build the request from Session ID, Media ID and Type' },
+          { name: 'By URL', value: 'byUrl', description: 'Use a ready download URL, e.g. a photoRefs/videoRefs link from a session response' },
+        ],
+        default: 'byId',
+        displayOptions: { show: { resource: ['media'], operation: ['download'] } },
+      },
+      {
+        displayName: 'URL',
+        name: 'downloadUrl',
+        type: 'string',
+        default: '',
+        required: true,
+        placeholder: 'https://live.fluidx.digital/api/fx/ext/media/download?sessionId=…&mediaId=…&type=photo',
+        description: 'A media download URL (e.g. photoRefs[].url / videoRefs[].url from a session response). The API key is still sent automatically.',
+        displayOptions: { show: { resource: ['media'], operation: ['download'], downloadSource: ['byUrl'] } },
+      },
+      {
+        displayName: 'Session ID',
+        name: 'downloadSessionId',
+        type: 'string',
+        default: '',
+        required: true,
+        displayOptions: { show: { resource: ['media'], operation: ['download'], downloadSource: ['byId'] } },
+      },
+      {
+        displayName: 'Media ID',
+        name: 'downloadMediaId',
+        type: 'string',
+        default: '',
+        required: true,
+        displayOptions: { show: { resource: ['media'], operation: ['download'], downloadSource: ['byId'] } },
+      },
+      {
+        displayName: 'Type',
+        name: 'downloadType',
+        type: 'options',
+        options: [
+          { name: 'Photo', value: 'photo' },
+          { name: 'Video', value: 'video' },
+        ],
+        default: 'photo',
+        displayOptions: { show: { resource: ['media'], operation: ['download'], downloadSource: ['byId'] } },
+      },
+      {
+        displayName: 'Format',
+        name: 'downloadFormat',
+        type: 'options',
+        options: [
+          { name: 'WebM', value: 'webm' },
+          { name: 'MP4', value: 'mp4' },
+        ],
+        default: 'webm',
+        description: 'Optional video transcode format (videos only). Ignored for photos.',
+        displayOptions: { show: { resource: ['media'], operation: ['download'], downloadSource: ['byId'], downloadType: ['video'] } },
+      },
+      {
+        displayName: 'Put Output In Field',
+        name: 'downloadBinaryProperty',
+        type: 'string',
+        default: 'data',
+        required: true,
+        description: 'Name of the binary property to write the downloaded media to.',
+        displayOptions: { show: { resource: ['media'], operation: ['download'] } },
+      },
+      {
+        displayName: 'File Name',
+        name: 'downloadFileName',
+        type: 'string',
+        default: '',
+        placeholder: 'capture.webm',
+        description: 'Optional file name for the binary property. Falls back to a name derived from the media ID and type.',
+        displayOptions: { show: { resource: ['media'], operation: ['download'] } },
       },
 
       // ---------- Eye ----------
@@ -537,6 +618,74 @@ export class FluidX implements INodeType {
             method = 'GET';
             path = '/api/fx/ext/media/summary';
             qs = { sessionId: this.getNodeParameter('mediaSessionId', i) as string };
+          } else if (operation === 'download') {
+            const source = this.getNodeParameter('downloadSource', i, 'byId') as string;
+            const binaryProperty = this.getNodeParameter('downloadBinaryProperty', i, 'data') as string;
+
+            const downloadRequest: IHttpRequestOptions = {
+              method: 'GET',
+              url: '',
+              headers: { ...extraHeaders },
+              encoding: 'arraybuffer',
+              returnFullResponse: true,
+            };
+            const meta: IDataObject = {};
+
+            if (source === 'byUrl') {
+              const url = (this.getNodeParameter('downloadUrl', i) as string).trim();
+              if (!url) {
+                throw new NodeOperationError(this.getNode(), 'A download URL is required when Source is "By URL".', { itemIndex: i });
+              }
+              downloadRequest.url = url;
+              meta.url = url;
+            } else {
+              const type = this.getNodeParameter('downloadType', i) as string;
+              const mediaId = this.getNodeParameter('downloadMediaId', i) as string;
+              const downloadQs: Record<string, string> = {
+                sessionId: this.getNodeParameter('downloadSessionId', i) as string,
+                mediaId,
+                type,
+              };
+              if (type === 'video') {
+                const format = (this.getNodeParameter('downloadFormat', i, '') as string).trim();
+                if (format) downloadQs.format = format;
+              }
+              downloadRequest.url = `${baseUrl}/api/fx/ext/media/download`;
+              downloadRequest.qs = downloadQs;
+              meta.sessionId = downloadQs.sessionId;
+              meta.mediaId = mediaId;
+              meta.type = type;
+            }
+
+            const downloadResponse = await this.helpers.httpRequestWithAuthentication.call(
+              this,
+              'fluidXApi',
+              downloadRequest,
+            );
+
+            const headers = (downloadResponse.headers ?? {}) as Record<string, string>;
+            const contentType = headers['content-type'] || 'application/octet-stream';
+            const fileName =
+              (this.getNodeParameter('downloadFileName', i, '') as string).trim() ||
+              defaultMediaFileName(
+                (meta.mediaId as string) || 'media',
+                (meta.type as string) || 'photo',
+                contentType,
+              );
+            meta.fileName = fileName;
+
+            const binaryData = await this.helpers.prepareBinaryData(
+              Buffer.from(downloadResponse.body as ArrayBuffer),
+              fileName,
+              contentType,
+            );
+
+            returnData.push({
+              json: meta,
+              binary: { [binaryProperty]: binaryData },
+              pairedItem: { item: i },
+            });
+            continue;
           } else {
             throw new NodeOperationError(this.getNode(), `Unknown media operation: ${operation}`, { itemIndex: i });
           }
@@ -612,4 +761,25 @@ function parseJsonOrObject(
     }
   }
   return {};
+}
+
+function defaultMediaFileName(mediaId: string, type: string, contentType: string): string {
+  const safeId = (mediaId || 'media').replace(/[^a-zA-Z0-9_-]/g, '_');
+  const ext = extensionFromContentType(contentType, type);
+  return `${type}-${safeId}${ext}`;
+}
+
+function extensionFromContentType(contentType: string, type: string): string {
+  const mime = contentType.split(';')[0].trim().toLowerCase();
+  const map: Record<string, string> = {
+    'image/jpeg': '.jpg',
+    'image/jpg': '.jpg',
+    'image/png': '.png',
+    'image/webp': '.webp',
+    'image/gif': '.gif',
+    'video/webm': '.webm',
+    'video/mp4': '.mp4',
+  };
+  if (map[mime]) return map[mime];
+  return type === 'video' ? '.webm' : '.jpg';
 }
