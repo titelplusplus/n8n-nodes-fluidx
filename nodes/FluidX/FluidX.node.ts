@@ -681,7 +681,9 @@ export class FluidX implements INodeType {
             );
 
             returnData.push({
-              json: meta,
+              // Keep the incoming item's JSON (e.g. the photoRefs `id`) and layer
+              // the download metadata on top, so downstream nodes still see it.
+              json: { ...(items[i]?.json ?? {}), ...meta },
               binary: { [binaryProperty]: binaryData },
               pairedItem: { item: i },
             });
