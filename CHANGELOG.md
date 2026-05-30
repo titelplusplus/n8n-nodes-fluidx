@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file.
 
 
+## [0.4.0](https://github.com/titelplusplus/n8n-nodes-fluidx/compare/v0.3.0...v0.4.0) (2026-05-30)
+
+### Features
+
+* media download operation with by-id and by-url source ([fbf2762](https://github.com/titelplusplus/n8n-nodes-fluidx/commit/fbf27627548eac5c892f765c359e36f147366681))
+
 ## [0.3.0](https://github.com/titelplusplus/n8n-nodes-fluidx/compare/v0.2.1...v0.3.0) (2026-05-29)
 
 ### Features
