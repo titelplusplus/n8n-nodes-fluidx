@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file.
 
 
+## [0.4.1](https://github.com/titelplusplus/n8n-nodes-fluidx/compare/v0.4.0...v0.4.1) (2026-05-30)
+
+### Bug Fixes
+
+* preserve incoming item JSON in media download output ([3f1f998](https://github.com/titelplusplus/n8n-nodes-fluidx/commit/3f1f9982ac252c7677eead2eb303afe3561e9932))
+
 ## [0.4.0](https://github.com/titelplusplus/n8n-nodes-fluidx/compare/v0.3.0...v0.4.0) (2026-05-30)
 
 ### Features
