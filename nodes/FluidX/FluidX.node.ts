@@ -496,6 +496,8 @@ export class FluidX implements INodeType {
         let body: Record<string, unknown> | undefined;
         let qs: Record<string, string | boolean | number> | undefined;
         const extraHeaders: Record<string, string> = {};
+        // Set for endpoints that answer with text/plain instead of JSON.
+        let plainTextResponse = false;
 
         if (resource === 'session') {
           if (operation === 'create') {
@@ -618,6 +620,9 @@ export class FluidX implements INodeType {
             method = 'GET';
             path = '/api/fx/ext/media/summary';
             qs = { sessionId: this.getNodeParameter('mediaSessionId', i) as string };
+            // The endpoint answers with text/plain, not JSON.
+            plainTextResponse = true;
+            extraHeaders.Accept = 'text/plain';
           } else if (operation === 'download') {
             const source = this.getNodeParameter('downloadSource', i, 'byId') as string;
             const binaryProperty = this.getNodeParameter('downloadBinaryProperty', i, 'data') as string;
@@ -707,7 +712,7 @@ export class FluidX implements INodeType {
           method,
           url: `${baseUrl}${path}`,
           headers: { 'Content-Type': 'application/json', ...extraHeaders },
-          json: true,
+          json: !plainTextResponse,
         };
         if (qs && Object.keys(qs).length > 0) requestOptions.qs = qs;
         if (body !== undefined) requestOptions.body = body;
@@ -717,6 +722,22 @@ export class FluidX implements INodeType {
           'fluidXApi',
           requestOptions,
         );
+
+        if (plainTextResponse) {
+          // Without this the raw text ends up as the item JSON itself, which n8n
+          // surfaces as a character-indexed object ({"0":"T","1":"i", ...}).
+          const summary = typeof response === 'string' ? response : String(response ?? '');
+          returnData.push({
+            json: {
+              sessionId: qs?.sessionId ?? '',
+              summary,
+              // Alias kept for workflows built before 0.4.2, which read `data`.
+              data: summary,
+            },
+            pairedItem: { item: i },
+          });
+          continue;
+        }
 
         if (Array.isArray(response)) {
           for (const entry of response) {

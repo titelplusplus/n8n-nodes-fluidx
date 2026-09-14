@@ -79,6 +79,23 @@ Output goes to `dist/`. The `n8n` block in `package.json` points at
 | Media → Download          | `GET /api/fx/ext/media/download?sessionId=&mediaId=&type=&format=` |
 | Eye → Take Photo          | `POST /api/fx/ext/eye/takephoto`                                |
 
+## Session summary (plain text)
+
+`Media → Get Summary` calls an endpoint that answers with `text/plain`, not JSON. The node
+normalises that into named fields, so the summary is a proper string on the output item:
+
+```json
+{
+  "sessionId": "faf5ef0c-...",
+  "summary": "photo-123.png\nTitle: ...\nDescription: ...\n",
+  "data": "photo-123.png\nTitle: ...\nDescription: ...\n"
+}
+```
+
+Use `{{ $json.summary }}`. `data` is an alias kept for workflows built before this behaviour
+existed — before it, the raw text was pushed as the item JSON itself, which n8n surfaces as a
+character-indexed object (`{"0":"T","1":"i", ...}`) and which no expression can read sensibly.
+
 ## Downloading media (binary)
 
 `Media → Download` streams the original binary of a captured photo or video and writes it
