@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file.
 
 
+## [0.4.2](https://github.com/titelplusplus/n8n-nodes-fluidx/compare/v0.4.1...v0.4.2) (2026-09-14)
+
+### Bug Fixes
+
+* return media summary as named text field ([29fe749](https://github.com/titelplusplus/n8n-nodes-fluidx/commit/29fe749023c79ead214b5fb8baf96fef480fc83f))
+
 ## [0.4.1](https://github.com/titelplusplus/n8n-nodes-fluidx/compare/v0.4.0...v0.4.1) (2026-05-30)
 
 ### Bug Fixes
