@@ -3,6 +3,8 @@
 All notable changes to this project are documented in this file.
 
 
+## [1.0.0](https://github.com/titelplusplus/n8n-nodes-fluidx/compare/v0.4.2...v1.0.0) (2026-09-15)
+
 ## [0.4.2](https://github.com/titelplusplus/n8n-nodes-fluidx/compare/v0.4.1...v0.4.2) (2026-09-14)
 
 ### Bug Fixes
