@@ -13,6 +13,13 @@ Community n8n node for the **fluidX revXR THE EYE** API. Adds a single `fluidX` 
 
 Once installed it appears in n8n's node search as **fluidX**.
 
+## Requirements
+
+- **Node.js** 20.15 or newer.
+- An n8n version that supports community nodes (self-hosted, or n8n Cloud where the node is
+  installable from the verified-node catalogue).
+- A fluidX tenant **API key**. `Media → Download` additionally requires a **TENANT_ADMIN** key.
+
 ## Install
 
 ### A) Via the community node UI (recommended)
@@ -92,9 +99,13 @@ normalises that into named fields, so the summary is a proper string on the outp
 }
 ```
 
-Use `{{ $json.summary }}`. `data` is an alias kept for workflows built before this behaviour
-existed — before it, the raw text was pushed as the item JSON itself, which n8n surfaces as a
-character-indexed object (`{"0":"T","1":"i", ...}`) and which no expression can read sensibly.
+Use `{{ $json.summary }}`. `data` holds the identical string under the field name n8n's generic
+**HTTP Request** node uses for non-JSON responses, so an existing workflow that reads `data` keeps
+working.
+
+Up to and including `0.4.1` the raw text was pushed as the item JSON itself, which n8n surfaces as
+a character-indexed object (`{"0":"T","1":"i", ...}`) that no expression can read sensibly. If you
+built a workflow against that shape, switch it to `{{ $json.summary }}`.
 
 ## Downloading media (binary)
 
@@ -157,6 +168,12 @@ Prerequisites:
 - Run on the `main` branch with a clean working tree.
 - Authenticate with GitHub so a release can be created: either export `GITHUB_TOKEN`, or use `GITHUB_TOKEN="$(gh auth token)" npm run release`.
 - The `NPM_TOKEN` secret must be set in the GitHub repo so the publish workflow can authenticate.
+
+If the publish job fails with `npm error code E404` on `PUT https://registry.npmjs.org/n8n-nodes-fluidx`,
+the package is not missing — that is npm's response to an expired or revoked publish token. Rotate
+the `NPM_TOKEN` secret and re-run the failed job; no new tag or version bump is needed. npm granular access tokens expire after at most 90 days, so expect this roughly quarterly
+until the workflow is migrated to [trusted publishing](https://docs.npmjs.com/trusted-publishers)
+(OIDC), which needs no token at all.
 
 Use [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `ci:`, `docs:`, etc.) so the changelog and version bump are derived correctly.
 
